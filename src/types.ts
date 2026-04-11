@@ -15,3 +15,11 @@ export type Node = {
 	vel: Vector2D;
 };
 
+
+export type Spring = {
+	length: number;
+	stiffness: number;
+	dampening: number;
+	connection: Connection;
+};
+
