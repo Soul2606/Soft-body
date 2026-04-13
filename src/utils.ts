@@ -1,8 +1,8 @@
 
-export function GET(id:string) {
+export function GET<T extends HTMLElement = HTMLElement>(id:string) {
 	const el = document.getElementById(id)
 	if (!el) throw new Error("Element does not exist");
-	return el
+	return el as T
 }
 
 

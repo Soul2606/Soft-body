@@ -1,19 +1,27 @@
 import type { Connection, Node, Spring } from "./types";
-import { Vector2D } from "./utils.js";
+import { GET, Vector2D } from "./utils.js";
 
 
+type DrawFnc = (ctx:CanvasRenderingContext2D)=>void
 
 
-const _canvas = document.getElementById("canvas") as HTMLCanvasElement | null
-if (!_canvas) throw new Error("error");
-const ctx = _canvas.getContext("2d")
+export const canvas = GET<HTMLCanvasElement>("canvas")
+const ctx = canvas.getContext("2d")
 if (!ctx)throw new Error("error");
 
 
-export const canvas = _canvas
 
 export const nodes = new Map<number, Node>()
 export const connections:Connection[] = []
+export const cameraPos = new Vector2D(0,0)
+
+const mousePos:Vector2D = new Vector2D(0,0)
+const floor = 600
+const drawQueue = {
+	permanent: new Set<DrawFnc>(),
+	once:      new Set<DrawFnc>(),
+}
+
 
 let nextId = 0
 export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0)) {
@@ -32,23 +40,36 @@ export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0
 
 
 
-
-const mousePos:Vector2D = new Vector2D(0,0)
+/**Constantly mutated to match mouse position in world. */
 export const mousePosition:Readonly<Vector2D> = mousePos
 
-_canvas.addEventListener("mousemove", e=>{
-	const rect = _canvas.getBoundingClientRect();
-	mousePos.x = e.clientX - rect.left
-	mousePos.y = e.clientY - rect.top
+canvas.addEventListener("mousemove", e=>{
+	const rect = canvas.getBoundingClientRect();
+	mousePos.x = e.clientX - rect.left + cameraPos.x
+	mousePos.y = e.clientY - rect.top + cameraPos.y
 })
 
 
 
 
-const tick = () => {
-	ctx.clearRect(0, 0, _canvas.width, _canvas.height)
+export function addToAnimationFrame(fnc:DrawFnc) {
+	drawQueue.permanent.add(fnc)
+	return ()=>drawQueue.permanent.delete(fnc)
+}
 
-	ctx.fillRect(mousePos.x-5, mousePos.y-5, 10, 10)
+
+
+
+const tick = () => {
+	ctx.setTransform(1,0,0,1,0,0)
+	ctx.clearRect(0, 0, canvas.width, canvas.height)
+	ctx.translate(-cameraPos.x, -cameraPos.y)
+
+	ctx.fillRect(mousePos.x - 5, mousePos.y - 5, 10, 10)
+
+	ctx.beginPath()
+	ctx.moveTo(0, floor)
+	ctx.lineTo(canvas.width, floor)
 
 	ctx.fillStyle = "magenta"
 	nodes.forEach((val,key)=>{
@@ -67,6 +88,15 @@ const tick = () => {
 		ctx.stroke()
 	}
 
+	for (const fnc of drawQueue.permanent) {
+		fnc(ctx)
+	}
+
+	for (const fnc of drawQueue.once) {
+		fnc(ctx)
+	}
+	drawQueue.once.clear()
+
 	simulatePhysics(
 		nodes, 
 		connections.map(v =>	({
@@ -76,7 +106,7 @@ const tick = () => {
 			stiffness:50
 		})),
 		10,
-		600
+		floor
 	)
 
 	requestAnimationFrame(tick)
