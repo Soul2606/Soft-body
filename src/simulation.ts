@@ -236,7 +236,7 @@ function simulatePhysics(
 
 		const mockNode = {pos: Vector2D.from(mousePosition), vel: new Vector2D(0,0)}
 
-		simSpring(node, mockNode, 10, 100, 1, dt)
+		simSpring(node, mockNode, 0, 100, 1, dt)
 	}
 
 	for (const node of nodes.values()) {
