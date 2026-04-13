@@ -1,4 +1,5 @@
-import type { Connection, Vector2D, Node, Spring } from "./types";
+import type { Connection, Node, Spring } from "./types";
+import { Vector2D } from "./utils.js";
 
 
 
@@ -15,15 +16,15 @@ export const nodes = new Map<number, Node>()
 export const connections:Connection[] = []
 
 let nextId = 0
-export function makeNode(position:Vector2D, velocity:Vector2D = {x:0,y:0}) {
+export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0)) {
 	nextId++
 	while (nodes.has(nextId)) {
 		nextId++
 	}
 	let id = nextId
 	const node:Node = {
-		pos:{...position},
-		vel:{...velocity}
+		pos:Vector2D.from(position),
+		vel:Vector2D.from(velocity)
 	}
 	nodes.set(id, node)
 	return { id, node }
@@ -32,7 +33,7 @@ export function makeNode(position:Vector2D, velocity:Vector2D = {x:0,y:0}) {
 
 
 
-const mousePos:Vector2D = {x:0, y:0}
+const mousePos:Vector2D = new Vector2D(0,0)
 export const mousePosition:Readonly<Vector2D> = mousePos
 
 _canvas.addEventListener("mousemove", e=>{
@@ -94,7 +95,7 @@ function simSpringMutable(
 
 	// init forces
 	for (const [id] of nodes) {
-		forces.set(id, { x: 0, y: 0 });
+		forces.set(id, new Vector2D(0, 0));
 	}
 
 	// spring forces

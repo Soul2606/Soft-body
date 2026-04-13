@@ -1,13 +1,7 @@
-
-
-export type Vector2D = { x: number; y: number; };
-
-
+import type { Vector2D } from "./utils.js";
 
 
 export type Connection = { a: number; b: number; };
-
-
 
 
 export type Node = {
