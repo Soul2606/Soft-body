@@ -1,4 +1,4 @@
-import type { Connection, Node, Spring } from "./types";
+import type { Node, Spring } from "./types";
 import { GET, Vector2D } from "./utils.js";
 
 
