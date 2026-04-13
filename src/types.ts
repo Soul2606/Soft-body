@@ -5,7 +5,7 @@ export type Vector2D = { x: number; y: number; };
 
 
 
-export type Connection = { a: string; b: string; };
+export type Connection = { a: number; b: number; };
 
 
 

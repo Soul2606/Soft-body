@@ -3,37 +3,40 @@ import type { Connection, Vector2D, Node, Spring } from "./types";
 
 
 
-const canvas = document.getElementById("canvas") as HTMLCanvasElement | null
-if (!canvas) throw new Error("error");
-const ctx = canvas.getContext("2d")
+const _canvas = document.getElementById("canvas") as HTMLCanvasElement | null
+if (!_canvas) throw new Error("error");
+const ctx = _canvas.getContext("2d")
 if (!ctx)throw new Error("error");
 
 
+export const canvas = _canvas
 
-const nodes = makeNodes([
-	{x:10, y:10},
-	{x:50, y:50},
-	{x:250, y:150},
-	{x:50, y:150},
-])
+export const nodes = new Map<number, Node>()
+export const connections:Connection[] = []
 
-
-
-
-const connections:Connection[] = [
-	{a:"0", b:"1"},
-	{a:"1", b:"2"},
-	{a:"2", b:"0"},
-	{a:"3", b:"0"},
-	{a:"3", b:"2"},
-]
+let nextId = 0
+export function makeNode(position:Vector2D, velocity:Vector2D = {x:0,y:0}) {
+	nextId++
+	while (nodes.has(nextId)) {
+		nextId++
+	}
+	let id = nextId
+	const node:Node = {
+		pos:{...position},
+		vel:{...velocity}
+	}
+	nodes.set(id, node)
+	return { id, node }
+}
 
 
 
 
 const mousePos:Vector2D = {x:0, y:0}
-canvas.addEventListener("mousemove", e=>{
-	const rect = canvas.getBoundingClientRect();
+export const mousePosition:Readonly<Vector2D> = mousePos
+
+_canvas.addEventListener("mousemove", e=>{
+	const rect = _canvas.getBoundingClientRect();
 	mousePos.x = e.clientX - rect.left
 	mousePos.y = e.clientY - rect.top
 })
@@ -42,7 +45,7 @@ canvas.addEventListener("mousemove", e=>{
 
 
 const tick = () => {
-	ctx.clearRect(0, 0, canvas.width, canvas.height)
+	ctx.clearRect(0, 0, _canvas.width, _canvas.height)
 
 	ctx.fillRect(mousePos.x-5, mousePos.y-5, 10, 10)
 
@@ -82,27 +85,12 @@ tick()
 
 
 
-function makeNodes(pos:Vector2D[]) {
-	const nodes = new Map<string, Node>()
-	for (let i = 0; i < pos.length; i++) {
-		const p = pos[i]!;
-		nodes.set(String(i), {
-			pos:p,
-			vel:{x:0, y:0}
-		})
-	}
-	return nodes
-}
-
-
-
-
 function simSpringMutable(
-	nodes: Map<string, { pos: Vector2D; vel: Vector2D; }>,
+	nodes: Map<number, { pos: Vector2D; vel: Vector2D; }>,
 	springs: Spring[],
 	dt = 0.016
 ) {
-	const forces = new Map<string, Vector2D>();
+	const forces = new Map<number, Vector2D>();
 
 	// init forces
 	for (const [id] of nodes) {
@@ -150,7 +138,7 @@ function simSpringMutable(
 
 
 function simulatePhysics(
-	nodes: Map<string, { pos: Vector2D; vel: Vector2D; }>,
+	nodes: Map<number, { pos: Vector2D; vel: Vector2D; }>,
 	springs: Spring[],
 	gravity: number,
 	floor: number,
