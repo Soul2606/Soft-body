@@ -8,17 +8,30 @@ const infoList = GET<HTMLUListElement>("info")
 var mouseState:"make"|"move"|"connect"|"delete"|"pan"|"select" = "make"
 
 
-window.addEventListener("keypress", e => {
-	if (e.code !== "KeyM") return
-	switch (mouseState) {
-		case "make":
-			mouseState = "select"
+window.addEventListener("keydown", e => {
+	console.log("keydown", e.code);
+	
+	switch (e.code) {
+		case "KeyM":
+			switch (mouseState) {
+				case "make":
+					mouseState = "select"
+					break;
+				case "select":
+					mouseState = "move"
+					break;
+				case "move":
+					mouseState = "make"
+					break;
+			}
+			console.log(mouseState);
 			break;
-		case "select":
-			mouseState = "make"
+		case "Escape":
+			console.log("escape");
+			
+			sim.setMouseAttach()
 			break;
 	}
-	console.log(mouseState);
 })
 
 
@@ -29,8 +42,23 @@ sim.canvas.addEventListener("click", e => {
 		const ids = validConnections().map(v => v[0])
 		const data = sim.makeNode(sim.mousePosition)
 		for (const id of ids) {
-			sim.connections.push({a:data.id, b:id})
+			sim.connect(data.id, id)
 		}
+	}
+
+
+	if (mouseState === "move") {
+		let closest
+		let closestDist = Infinity
+		for (const [id, node] of sim.nodes) {
+			const dist = node.pos.distanceTo(sim.mousePosition)
+			if (dist < closestDist) {
+				closestDist = dist
+				closest = id
+			}
+		}
+		if (!closest) return
+		sim.setMouseAttach(closest)
 	}
 })
 
@@ -49,7 +77,7 @@ sim.canvas.addEventListener("mousemove", e => {
 
 
 
-// IT WORKS PERFECTLY!
+
 sim.addToAnimationFrame(ctx => {
 	if (mouseState === "make") {
 		const mPos = sim.mousePosition

@@ -12,7 +12,7 @@ if (!ctx)throw new Error("error");
 
 
 export const nodes = new Map<number, Node>()
-export const connections:Connection[] = []
+export const connections = new Set<Spring>()
 export const cameraPos = new Vector2D(0,0)
 
 const mousePos:Vector2D = new Vector2D(0,0)
@@ -21,6 +21,10 @@ const drawQueue = {
 	permanent: new Set<DrawFnc>(),
 	once:      new Set<DrawFnc>(),
 }
+
+var mouseAttached:undefined|number
+
+
 
 
 let nextId = 0
@@ -37,6 +41,7 @@ export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0
 	nodes.set(id, node)
 	return { id, node }
 }
+
 
 
 
@@ -60,7 +65,44 @@ export function addToAnimationFrame(fnc:DrawFnc) {
 
 
 
+export function connect(idA:number, idB:number, length?:number, dampening = 2, stiffness = 50) {
+	const nodeA = nodes.get(idA)
+	const nodeB = nodes.get(idB)
+	if (!nodeA || !nodeB) return false
+	if (length === undefined) {
+		connections.add({
+			connection:{a:idA, b:idB},
+			dampening,
+			stiffness,
+			length: nodeA.pos.distanceTo(nodeB.pos),
+		})
+	} else {
+		connections.add({
+			connection:{a:idA, b:idB},
+			dampening,
+			stiffness,
+			length,
+		})
+	}
+	return true
+}
+
+
+
+
+export function setMouseAttach(id?:number) {
+	mouseAttached = id
+}
+
+
+
+
+let now = Date.now()
 const tick = () => {
+	let n = Date.now()
+	const deltaT = (n - now) / 1000
+	now = n
+	
 	ctx.setTransform(1,0,0,1,0,0)
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 	ctx.translate(-cameraPos.x, -cameraPos.y)
@@ -70,6 +112,7 @@ const tick = () => {
 	ctx.beginPath()
 	ctx.moveTo(0, floor)
 	ctx.lineTo(canvas.width, floor)
+	ctx.stroke()
 
 	ctx.fillStyle = "magenta"
 	nodes.forEach((val,key)=>{
@@ -78,9 +121,9 @@ const tick = () => {
 
 	ctx.strokeStyle = "black"
 	for (const connection of connections) {
-		const start = nodes.get(connection.a)?.pos
+		const start = nodes.get(connection.connection.a)?.pos
 		if (!start) continue
-		const end = nodes.get(connection.b)?.pos
+		const end = nodes.get(connection.connection.b)?.pos
 		if (!end) continue
 		ctx.beginPath()
 		ctx.moveTo(start.x, start.y)
@@ -99,14 +142,10 @@ const tick = () => {
 
 	simulatePhysics(
 		nodes, 
-		connections.map(v =>	({
-			length:75,
-			connection:v,
-			dampening:2,
-			stiffness:50
-		})),
-		10,
-		floor
+		connections.values().toArray(),
+		50,
+		floor,
+		deltaT
 	)
 
 	requestAnimationFrame(tick)
@@ -116,10 +155,10 @@ tick()
 
 
 
-function simSpringMutable(
+function simStruts(
 	nodes: Map<number, { pos: Vector2D; vel: Vector2D; }>,
 	springs: Spring[],
-	dt = 0.016
+	dt:number
 ) {
 	const forces = new Map<number, Vector2D>();
 
@@ -134,35 +173,49 @@ function simSpringMutable(
 		const b = nodes.get(spring.connection.b);
 		if (!a || !b) continue;
 
-		const dx = b.pos.x - a.pos.x;
-		const dy = b.pos.y - a.pos.y;
-		const dist = Math.hypot(dx, dy) || 0.0001;
-
-		const dirX = dx / dist;
-		const dirY = dy / dist;
-
-		const stretch = dist - spring.length;
-		const forceMag = spring.stiffness * stretch;
-
-		const fx = dirX * forceMag;
-		const fy = dirY * forceMag;
-
-		const damp = spring.dampening;
-
-		// apply forces directly
-		a.vel.x += fx * dt;
-		a.vel.y += fy * dt;
-
-		b.vel.x -= fx * dt;
-		b.vel.y -= fy * dt;
-
-		// damping (per spring is a nice touch btw)
-		a.vel.x *= (1 - damp * dt);
-		a.vel.y *= (1 - damp * dt);
-		b.vel.x *= (1 - damp * dt);
-		b.vel.y *= (1 - damp * dt);
+		simSpring(b, a, spring.length, spring.stiffness, spring.dampening, dt);
 	}
 
+}
+
+
+
+
+function simSpring(
+	b: { pos: Vector2D; vel: Vector2D; }, 
+	a: { pos: Vector2D; vel: Vector2D; }, 
+	length:number, 
+	stiffness:number, 
+	dampening:number, 
+	dt: number
+) {
+	const dx = b.pos.x - a.pos.x;
+	const dy = b.pos.y - a.pos.y;
+	const dist = Math.hypot(dx, dy) || 0.0001;
+
+	const dirX = dx / dist;
+	const dirY = dy / dist;
+
+	const stretch = dist - length;
+	const forceMag = stiffness * stretch;
+
+	const fx = dirX * forceMag;
+	const fy = dirY * forceMag;
+
+	const damp = dampening;
+
+	// apply forces directly
+	a.vel.x += fx * dt;
+	a.vel.y += fy * dt;
+
+	b.vel.x -= fx * dt;
+	b.vel.y -= fy * dt;
+
+	// damping (per spring is a nice touch btw)
+	a.vel.x *= (1 - damp * dt);
+	a.vel.y *= (1 - damp * dt);
+	b.vel.x *= (1 - damp * dt);
+	b.vel.y *= (1 - damp * dt);
 }
 
 
@@ -173,11 +226,19 @@ function simulatePhysics(
 	springs: Spring[],
 	gravity: number,
 	floor: number,
-	dt = 0.016
+	dt:number
 ) {
-	simSpringMutable(nodes, springs, dt);
+	simStruts(nodes, springs, dt);
 
-	// integrate (pulled out)
+	if (mouseAttached) {
+		const node = nodes.get(mouseAttached)
+		if (!node) return
+
+		const mockNode = {pos: Vector2D.from(mousePosition), vel: new Vector2D(0,0)}
+
+		simSpring(node, mockNode, 10, 100, 1, dt)
+	}
+
 	for (const node of nodes.values()) {
 		node.vel.y += gravity * dt;
 
