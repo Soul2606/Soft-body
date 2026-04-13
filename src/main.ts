@@ -37,26 +37,9 @@ window.addEventListener("keydown", e => {
 	console.log("keydown", e.code);
 	
 	switch (e.code) {
-		case "KeyM":
-			switch (mouseState) {
-				case "make":
-					mouseState = "select"
-					break;
-				case "select":
-					mouseState = "move"
-					break;
-				case "move":
-					mouseState = "delete"
-					break;
-				case "delete":
-					mouseState = "make"
-					break;
-			}
-			console.log(mouseState);
-			break;
 		case "Escape":
 			console.log("escape");
-			
+			connecting = undefined
 			sim.setMouseAttach()
 			break;
 	}
@@ -76,17 +59,13 @@ sim.canvas.addEventListener("click", e => {
 
 
 	if (mouseState === "move") {
-		let closest
-		let closestDist = Infinity
-		for (const [id, node] of sim.nodes) {
-			const dist = node.pos.distanceTo(sim.mousePosition)
-			if (dist < closestDist) {
-				closestDist = dist
-				closest = id
-			}
+		if (sim.getMouseAttach() !== undefined) {
+			sim.setMouseAttach()
+			return
 		}
+		let closest = closestNode(sim.nodes.entries().toArray(), 10)
 		if (!closest) return
-		sim.setMouseAttach(closest)
+		sim.setMouseAttach(closest[0])
 	}
 
 
@@ -142,14 +121,23 @@ sim.canvas.addEventListener("mousemove", e => {
 
 
 sim.addToAnimationFrame(ctx => {
+	const mPos = sim.mousePosition
+
 	if (mouseState === "make") {
-		const mPos = sim.mousePosition
 		for (const [id, node] of validConnections()) {
 			ctx.beginPath()
 			ctx.moveTo(mPos.x, mPos.y)
 			ctx.lineTo(node.pos.x, node.pos.y)
 			ctx.stroke()
 		}
+	}
+
+	for (const [id, node] of sim.nodes) {
+		if (id !== connecting) continue
+		ctx.beginPath()
+		ctx.moveTo(node.pos.x, node.pos.y)
+		ctx.lineTo(mPos.x, mPos.y)
+		ctx.stroke()
 	}
 })
 

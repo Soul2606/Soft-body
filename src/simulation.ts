@@ -94,6 +94,10 @@ export function setMouseAttach(id?:number) {
 	mouseAttached = id
 }
 
+export function getMouseAttach() {
+	return mouseAttached
+}
+
 
 
 
@@ -106,8 +110,6 @@ const tick = () => {
 	ctx.setTransform(1,0,0,1,0,0)
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 	ctx.translate(-cameraPos.x, -cameraPos.y)
-
-	ctx.fillRect(mousePos.x - 5, mousePos.y - 5, 10, 10)
 
 	ctx.beginPath()
 	ctx.moveTo(0, floor)
