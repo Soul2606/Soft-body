@@ -5,8 +5,9 @@ export type Connection = { a: number; b: number; };
 
 
 export type Node = {
-	pos: Vector2D;
-	vel: Vector2D;
+	pos:   Vector2D;
+	vel:   Vector2D;
+	locked:boolean;
 };
 
 

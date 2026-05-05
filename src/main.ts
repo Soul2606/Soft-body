@@ -73,20 +73,20 @@ sim.canvas.addEventListener("click", e => {
 		const node = closestNode(sim.nodes.entries().toArray(), 10)
 
 		if (node === undefined) {
-			const spring = closestSpring(sim.connections.values().toArray(), 10)
+			const spring = closestSpring(sim.struts.values().toArray(), 10)
 			if (spring === undefined) return
-			sim.connections.delete(spring)
+			sim.struts.delete(spring)
 			return
 		}
 
 		const id = node[0]
 		sim.nodes.delete(id)
-		const connecting = sim.connections.values().toArray().filter(v =>
+		const connecting = sim.struts.values().toArray().filter(v =>
 			v.connection.a === id || v.connection.b === id
 		)
 
 		for (const c of connecting) {
-			sim.connections.delete(c)
+			sim.struts.delete(c)
 		}
 	}
 
@@ -216,3 +216,10 @@ function closestSpring(spr:Spring[], maxDistance = Infinity) {
 
 	return spring
 }
+
+
+
+
+get("save").addEventListener("click", () => {
+	console.log(sim.toSave());
+})

@@ -1,5 +1,6 @@
 import type { Node, Spring } from "./types";
 import { GET, Vector2D } from "./utils.js";
+import type * as Ser from "./serialized-types.js";
 
 
 type DrawFnc = (ctx:CanvasRenderingContext2D)=>void
@@ -12,7 +13,7 @@ if (!ctx)throw new Error("error");
 
 
 export const nodes = new Map<number, Node>()
-export const connections = new Set<Spring>()
+export const struts = new Set<Spring>()
 export const cameraPos = new Vector2D(0,0)
 
 const mousePos:Vector2D = new Vector2D(0,0)
@@ -36,7 +37,8 @@ export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0
 	let id = nextId
 	const node:Node = {
 		pos:Vector2D.from(position),
-		vel:Vector2D.from(velocity)
+		vel:Vector2D.from(velocity),
+		locked:false,
 	}
 	nodes.set(id, node)
 	return { id, node }
@@ -70,14 +72,14 @@ export function connect(idA:number, idB:number, length?:number, dampening = 2, s
 	const nodeB = nodes.get(idB)
 	if (!nodeA || !nodeB) return false
 	if (length === undefined) {
-		connections.add({
+		struts.add({
 			connection:{a:idA, b:idB},
 			dampening,
 			stiffness,
 			length: nodeA.pos.distanceTo(nodeB.pos),
 		})
 	} else {
-		connections.add({
+		struts.add({
 			connection:{a:idA, b:idB},
 			dampening,
 			stiffness,
@@ -122,7 +124,7 @@ const tick = () => {
 	})
 
 	ctx.strokeStyle = "black"
-	for (const connection of connections) {
+	for (const connection of struts) {
 		const start = nodes.get(connection.connection.a)?.pos
 		if (!start) continue
 		const end = nodes.get(connection.connection.b)?.pos
@@ -144,8 +146,8 @@ const tick = () => {
 
 	simulatePhysics(
 		nodes, 
-		connections.values().toArray(),
-		50,
+		struts.values().toArray(),
+		0,
 		floor,
 		deltaT
 	)
@@ -224,7 +226,7 @@ function simSpring(
 
 
 function simulatePhysics(
-	nodes: Map<number, { pos: Vector2D; vel: Vector2D; }>,
+	nodes: Map<number, Node>,
 	springs: Spring[],
 	gravity: number,
 	floor: number,
@@ -251,4 +253,15 @@ function simulatePhysics(
 
 
 
+
+export function toSave():{nodes:Ser.Node[], struts:Spring[]} {
+	return {
+		nodes:nodes.entries().toArray().map(([id, node]) => ({
+			id,
+			pos:{x:node.pos.x, y:node.pos.y},
+			vel:{x:node.vel.x, y:node.vel.y},
+		})),
+		struts:struts.values().toArray().map(s => structuredClone(s))
+	}
+}
 
