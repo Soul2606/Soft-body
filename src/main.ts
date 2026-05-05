@@ -5,29 +5,39 @@ import { distanceToLine, GET as get } from "./utils.js"
 
 const infoList = get<HTMLUListElement>("info")
 
-var mouseState:"make"|"move"|"connect"|"delete"|"pan"|"select" = "make"
-var connecting:number|undefined
+var mouseState:"make"|"drag"|"connect"|"delete"|"pan"|"select"|"move" = "make"
+var interacting:number|undefined
 
 
 
 get("select").addEventListener("click", () => {
 	mouseState = "select"
+	interacting = undefined
 })
 
 get("add").addEventListener("click", () => {
 	mouseState = "make"
+	interacting = undefined
 })
 
 get("delete").addEventListener("click", () => {
 	mouseState = "delete"
+	interacting = undefined
 })
 
 get("drag").addEventListener("click", () => {
-	mouseState = "move"
+	mouseState = "drag"
+	interacting = undefined
 })
 
 get("connect").addEventListener("click", () => {
 	mouseState = "connect"
+	interacting = undefined
+})
+
+get("move").addEventListener("click", () => {
+	mouseState = "move"
+	interacting = undefined
 })
 
 
@@ -39,7 +49,7 @@ window.addEventListener("keydown", e => {
 	switch (e.code) {
 		case "Escape":
 			console.log("escape");
-			connecting = undefined
+			interacting = undefined
 			sim.setMouseAttach()
 			break;
 	}
@@ -58,7 +68,7 @@ sim.canvas.addEventListener("click", e => {
 	}
 
 
-	if (mouseState === "move") {
+	if (mouseState === "drag") {
 		if (sim.getMouseAttach() !== undefined) {
 			sim.setMouseAttach()
 			return
@@ -94,13 +104,21 @@ sim.canvas.addEventListener("click", e => {
 	if (mouseState === "connect") {
 		const node = closestNode(sim.nodes.entries().toArray(), 10)
 		if (node === undefined) return
-		if (connecting === undefined) {
-			connecting = node[0]
+		if (interacting === undefined) {
+			interacting = node[0]
 			return
 		}
 
-		sim.connect(node[0], connecting)
-		connecting = undefined
+		sim.connect(node[0], interacting)
+		interacting = undefined
+	}
+
+
+	if (mouseState === "move") {
+		const closest = closestNode(sim.nodes.entries().toArray(), 10)
+		if (!closest) return
+
+		interacting = closest[0]
 	}
 })
 
@@ -108,12 +126,18 @@ sim.canvas.addEventListener("click", e => {
 
 
 sim.canvas.addEventListener("mousemove", e => {
-	if (mouseState !== "select") return
-	const mPos = sim.mousePosition
-	infoList.innerHTML = ""
-	for (const [id, node] of sim.nodes) {
-		if (node.pos.distanceTo(mPos) > 10) continue
-		infoList.innerHTML += `<li>${id}</li>`
+	if (mouseState === "select") {
+		const mPos = sim.mousePosition
+		infoList.innerHTML = ""
+		for (const [id, node] of sim.nodes) {
+			if (node.pos.distanceTo(mPos) > 10) continue
+			infoList.innerHTML += `<li>${id}</li>`
+		}
+	}
+
+
+	if (mouseState === "move" && interacting) {
+		sim.moveTo(sim.mousePosition, interacting)
 	}
 })
 
@@ -133,7 +157,7 @@ sim.addToAnimationFrame(ctx => {
 	}
 
 	for (const [id, node] of sim.nodes) {
-		if (id !== connecting) continue
+		if (id !== interacting) continue
 		ctx.beginPath()
 		ctx.moveTo(node.pos.x, node.pos.y)
 		ctx.lineTo(mPos.x, mPos.y)
@@ -222,4 +246,5 @@ function closestSpring(spr:Spring[], maxDistance = Infinity) {
 
 get("save").addEventListener("click", () => {
 	console.log(sim.toSave());
+	interacting = undefined
 })

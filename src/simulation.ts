@@ -265,3 +265,38 @@ export function toSave():{nodes:Ser.Node[], struts:Spring[]} {
 	}
 }
 
+
+
+export function moveTo(target:Vector2D, nodeId:number) {
+	const node = nodes.get(nodeId)
+	if (!node) return false
+
+	const connected = connectedTo(nodeId)
+	if (!connected) return false
+
+	
+	for (const spring of connected) {
+		const isA = spring.connection.a === nodeId
+		const node = nodes.get(isA ? spring.connection.b : spring.connection.a)
+		if (!node) continue
+		const oldPos = Vector2D.from(node.pos)
+		spring.length = target.distanceTo(oldPos)
+	}
+
+	node.pos = Vector2D.from(target)
+
+	return true
+}
+
+
+
+
+export function connectedTo(nodeId:number) {
+	const node = nodes.get(nodeId)
+	if (!node) return
+
+	return struts.values().toArray().filter(spr =>
+		spr.connection.a === nodeId || spr.connection.b === nodeId 
+	)
+}
+
