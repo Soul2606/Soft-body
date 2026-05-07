@@ -6,7 +6,7 @@ export type Vector2D = {
 
 
 export type Node = {
-	id: number
 	pos:Vector2D;
 	vel:Vector2D;
+	locked:boolean;
 };

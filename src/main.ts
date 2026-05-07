@@ -248,3 +248,24 @@ get("save").addEventListener("click", () => {
 	console.log(sim.toSave());
 	interacting = undefined
 })
+
+
+
+
+sim.load("/saves/orb.json").then(res => {
+	for (const node of res.nodes) {
+		sim.makeNode(node.pos)
+	}
+
+
+	for (const spring of res.struts) {
+		sim.connect(
+			spring.connection.a,
+			spring.connection.b,
+			spring.length,
+			spring.dampening,
+			spring.stiffness,
+		)
+	}
+})
+

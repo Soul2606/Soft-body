@@ -71,22 +71,18 @@ export function connect(idA:number, idB:number, length?:number, dampening = 2, s
 	const nodeA = nodes.get(idA)
 	const nodeB = nodes.get(idB)
 	if (!nodeA || !nodeB) return false
-	if (length === undefined) {
-		struts.add({
-			connection:{a:idA, b:idB},
-			dampening,
-			stiffness,
-			length: nodeA.pos.distanceTo(nodeB.pos),
-		})
-	} else {
-		struts.add({
-			connection:{a:idA, b:idB},
-			dampening,
-			stiffness,
-			length,
-		})
+	const len = length === undefined ? nodeA.pos.distanceTo(nodeB.pos) : length
+
+	const spring:Spring = {
+		connection:{a:idA, b:idB},
+		dampening,
+		stiffness,
+		length:len,
 	}
-	return true
+
+	struts.add(spring)
+
+	return spring
 }
 
 
@@ -260,10 +256,28 @@ export function toSave():{nodes:Ser.Node[], struts:Spring[]} {
 			id,
 			pos:{x:node.pos.x, y:node.pos.y},
 			vel:{x:node.vel.x, y:node.vel.y},
+			locked: node.locked,
 		})),
 		struts:struts.values().toArray().map(s => structuredClone(s))
 	}
 }
+
+
+
+
+export async function load(url:string) {
+	const json:{nodes:Ser.Node[], struts:Spring[]} = await (await fetch(url)).json()
+
+	return {
+		nodes: json.nodes.map<Node>(n => ({
+			pos: new Vector2D(n.pos.x, n.pos.y),
+			vel: new Vector2D(n.pos.x, n.pos.y),
+			locked: false,
+		})),
+		struts:json.struts,
+	}
+}
+
 
 
 
