@@ -1,5 +1,5 @@
 import type { Node, Spring } from "./types";
-import { GET, Vector2D } from "./utils.js";
+import { area, GET, Vector2D } from "./utils.js";
 import type * as Ser from "./serialized-types.js";
 
 
@@ -314,3 +314,18 @@ export function connectedTo(nodeId:number) {
 	)
 }
 
+
+
+
+export function solvePressure(points: Node[], desiredArea: number, force:number) {
+	const a = area(points.map(p => p.pos))
+	const diff = desiredArea - a
+	const pressure = diff * force
+
+	const center = Vector2D.average(points.map(p => p.pos))
+
+	for (const p of points) {
+		const dir = p.pos.sub(center).normalized()
+		p.vel = p.vel.add(dir.multiply(pressure))
+	}
+}

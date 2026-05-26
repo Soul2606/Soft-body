@@ -124,8 +124,9 @@ sim.canvas.addEventListener("click", e => {
 
 
 
-
+const mousePos = get("mouse-pos")
 sim.canvas.addEventListener("mousemove", e => {
+	mousePos.textContent = `${sim.mousePosition.x}, ${sim.mousePosition.y}`
 	if (mouseState === "select") {
 		const mPos = sim.mousePosition
 		infoList.innerHTML = ""
@@ -252,20 +253,22 @@ get("save").addEventListener("click", () => {
 
 
 
-sim.load("/saves/orb.json").then(res => {
-	for (const node of res.nodes) {
-		sim.makeNode(node.pos)
-	}
+get("load").addEventListener("click", () => {
+	sim.load("/saves/orb.json").then(res => {
+		for (const node of res.nodes) {
+			sim.makeNode(node.pos)
+		}
 
 
-	for (const spring of res.struts) {
-		sim.connect(
-			spring.connection.a,
-			spring.connection.b,
-			spring.length,
-			spring.dampening,
-			spring.stiffness,
-		)
-	}
+		for (const spring of res.struts) {
+			sim.connect(
+				spring.connection.a,
+				spring.connection.b,
+				spring.length,
+				spring.dampening,
+				spring.stiffness,
+			)
+		}
+	})
 })
 
