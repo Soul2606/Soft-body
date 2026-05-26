@@ -143,9 +143,12 @@ const tick = () => {
 	simulatePhysics(
 		nodes, 
 		struts.values().toArray(),
-		0,
-		floor,
-		deltaT
+		deltaT,
+		{
+			gravity:0,
+			floor:floor,
+			drag:0.4,
+		}
 	)
 
 	requestAnimationFrame(tick)
@@ -223,10 +226,13 @@ function simSpring(
 
 function simulatePhysics(
 	nodes: Map<number, Node>,
-	springs: Spring[],
-	gravity: number,
-	floor: number,
-	dt:number
+	springs:Spring[],
+	dt:number,
+	options:{
+		gravity:number
+		floor:number
+		drag:number
+	}
 ) {
 	simStruts(nodes, springs, dt);
 
@@ -240,10 +246,11 @@ function simulatePhysics(
 	}
 
 	for (const node of nodes.values()) {
-		node.vel.y += gravity * dt;
+		node.vel.y += options.gravity * dt;
+		node.vel.sub(Vector2D.fromNum(options.drag * node.vel.length * dt))
 
 		node.pos.x += node.vel.x * dt;
-		node.pos.y = Math.min(node.pos.y + node.vel.y * dt, floor);
+		node.pos.y = Math.min(node.pos.y + node.vel.y * dt, options.floor);
 	}
 }
 

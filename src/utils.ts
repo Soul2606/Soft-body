@@ -44,6 +44,10 @@ export class Vector2D {
 		return new Vector2D(vec.x, vec.y)
 	}
 
+	static fromNum(x:number) {
+		return new Vector2D(x,x)
+	}
+
 	x: number
 	y: number
 	constructor(x:number = 0, y:number = 0){
