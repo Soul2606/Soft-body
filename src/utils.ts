@@ -92,6 +92,10 @@ export class Vector2D {
 	cross(vec:Vector2D){
 		return this.x * vec.y - this.y * vec.x
 	}
+
+	orient(a:Vector2D, b:Vector2D) {
+		return a.sub(this).cross(b.sub(this))
+	}
 };
 
 
@@ -130,7 +134,82 @@ export function area(points: Vector2D[]): number {
 
 
 
+/**Returns the area of a regular polygon. */
 export function areaRegPoly(cornersAmount: number, edgeLen: number) {
 	return cornersAmount * edgeLen ** 2 /
 		(4 * Math.tan(Math.PI / cornersAmount))
+}
+
+
+
+
+
+/**Assumes each point is connected in a loop. */
+export function selfIntersectionPoly(points: Vector2D[]) {
+	function edgesAdjacent(
+		i: number,
+		j: number,
+		len: number
+	) {
+		return (
+			i === j ||
+			(i + 1) % len === j ||
+			(j + 1) % len === i
+		)
+	}
+
+	const indexes = new Set<number>()
+
+	const len = points.length
+
+	for (let i = 0; i < len; i++) {
+		const a1 = points[i]!
+		const a2 = points[(i + 1) % len]!
+
+		for (let j = i + 1; j < len; j++) {
+
+			if (edgesAdjacent(i,j,len)) continue
+
+			const b1 = points[j]!
+			const b2 = points[(j + 1) % len]!
+
+			if (segmentsIntersect(a1, a2, b1, b2)) {
+				indexes.add(i)
+				indexes.add(j)
+			} else {
+			}
+		}
+	}
+	return indexes
+}
+
+selfIntersectionPoly([
+	new Vector2D(0,0),
+	new Vector2D(1,0),
+	new Vector2D(0,1),
+	new Vector2D(1,-1),
+	new Vector2D(-1,1),
+	new Vector2D(-1,-1),
+])
+
+
+
+
+
+function segmentsIntersect(
+	a1: Vector2D,
+	a2: Vector2D,
+	b1: Vector2D,
+	b2: Vector2D
+) {
+	const o1 = a1.orient(a2, b1)
+	const o2 = a1.orient(a2, b2)
+
+	const o3 = b1.orient(b2, a1)
+	const o4 = b1.orient(b2, a2)
+
+	return (
+		(o1 > 0) !== (o2 > 0) &&
+		(o3 > 0) !== (o4 > 0)
+	)
 }

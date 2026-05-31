@@ -3,7 +3,7 @@ import { area, GET, relu, Vector2D } from "./utils.js";
 import type * as Ser from "./serialized-types.js";
 
 
-type DrawFnc = (ctx:CanvasRenderingContext2D)=>void
+type DrawFnc = (args:{ctx:CanvasRenderingContext2D, delta:number})=>void
 
 
 export const canvas = GET<HTMLCanvasElement>("canvas")
@@ -132,11 +132,11 @@ const tick = () => {
 	}
 
 	for (const fnc of drawQueue.permanent) {
-		fnc(ctx)
+		fnc({ctx, delta:deltaT})
 	}
 
 	for (const fnc of drawQueue.once) {
-		fnc(ctx)
+		fnc({ctx, delta:deltaT})
 	}
 	drawQueue.once.clear()
 

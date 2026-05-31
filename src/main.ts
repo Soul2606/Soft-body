@@ -1,6 +1,6 @@
 import * as sim from "./simulation.js"
 import type { Node, Spring } from "./types.js"
-import { areaRegPoly, distanceToLine, GET as get, Vector2D } from "./utils.js"
+import { areaRegPoly, distanceToLine, GET as get, selfIntersectionPoly, Vector2D } from "./utils.js"
 
 
 const infoList = get<HTMLUListElement>("info")
@@ -145,7 +145,7 @@ sim.canvas.addEventListener("mousemove", e => {
 
 
 
-sim.addToAnimationFrame(ctx => {
+sim.addToAnimationFrame(({ctx}) => {
 	const mPos = sim.mousePosition
 
 	if (mouseState === "make") {
@@ -293,18 +293,21 @@ function softPoly(pos:Vector2D, points=8, len=10) {
 	}
 	if (prevId !== undefined && nodes[0]) sim.connect(prevId, nodes[0]!.id, len)
 
-	sim.addToAnimationFrame(()=>sim.solvePressure(
-		nodes.map(n=>n.node),
-		areaRegPoly(points, len),
-		0.1
-	))
+	sim.addToAnimationFrame(()=>{
+		sim.solvePressure(
+			nodes.map(n=>n.node),
+			areaRegPoly(points, len),
+			0.1
+		)
+		console.log(selfIntersectionPoly(nodes.map(n=>n.node.pos)).values().toArray())
+	})
 }
 
 
 
 softPoly(
 	new Vector2D(300,300),
-	8,
-	80
+	16,
+	40
 )
 
