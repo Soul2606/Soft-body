@@ -1,6 +1,6 @@
 import * as sim from "./simulation.js"
 import type { Node, Spring } from "./types.js"
-import { distanceToLine, GET as get } from "./utils.js"
+import { areaRegPoly, distanceToLine, GET as get, Vector2D } from "./utils.js"
 
 
 const infoList = get<HTMLUListElement>("info")
@@ -271,4 +271,40 @@ get("load").addEventListener("click", () => {
 		}
 	})
 })
+
+
+
+
+function softPoly(pos:Vector2D, points=8, len=10) {
+	const nodes:{node:Node, id:number}[] = []
+	let prevId:undefined|number
+	for (let i = 0; i < points; i++) {
+		const rad = Math.PI * 2 / points * i
+		const vec = new Vector2D(
+			Math.cos(rad),
+			Math.sin(rad)
+		).multiply(len)
+		const {id, node} = sim.makeNode(pos.add(vec))
+		nodes.push({id, node})
+		if (prevId !== undefined) {
+			sim.connect(id, prevId, len)
+		}
+		prevId = id
+	}
+	if (prevId !== undefined && nodes[0]) sim.connect(prevId, nodes[0]!.id, len)
+
+	sim.addToAnimationFrame(()=>sim.solvePressure(
+		nodes.map(n=>n.node),
+		areaRegPoly(points, len),
+		0.1
+	))
+}
+
+
+
+softPoly(
+	new Vector2D(300,300),
+	8,
+	80
+)
 

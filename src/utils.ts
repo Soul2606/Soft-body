@@ -126,3 +126,11 @@ export function area(points: Vector2D[]): number {
 
 	return Math.abs(sum) * 0.5
 }
+
+
+
+
+export function areaRegPoly(cornersAmount: number, edgeLen: number) {
+	return cornersAmount * edgeLen ** 2 /
+		(4 * Math.tan(Math.PI / cornersAmount))
+}
