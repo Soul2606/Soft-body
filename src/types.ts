@@ -18,3 +18,8 @@ export type Spring = {
 	connection: Connection;
 };
 
+
+export type Line = {
+	a:Vector2D
+	b:Vector2D
+}

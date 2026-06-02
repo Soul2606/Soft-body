@@ -1,9 +1,17 @@
 import type { Node, Spring } from "./types";
-import { area, GET, relu, Vector2D } from "./utils.js";
+import { area, areaRegPoly, GET, relu, selfIntersectionPoly, Vector2D } from "./utils.js";
 import type * as Ser from "./serialized-types.js";
 
 
 type DrawFnc = (args:{ctx:CanvasRenderingContext2D, delta:number})=>void
+
+
+// A polygon soft body that should be connected clockwise with springs. 
+type SoftPoly = {
+	nodes:Node[]
+	area:number
+	collides:{with:SoftPoly, side:"in"|"out"}[]
+}
 
 
 export const canvas = GET<HTMLCanvasElement>("canvas")
@@ -24,6 +32,8 @@ const drawQueue = {
 }
 
 var mouseAttached:undefined|number
+
+var softPolys:SoftPoly[] = []
 
 
 
@@ -139,6 +149,15 @@ const tick = () => {
 		fnc({ctx, delta:deltaT})
 	}
 	drawQueue.once.clear()
+
+	for (const {nodes, area} of softPolys) {
+		solvePressure(
+			nodes,
+			area,
+			0.1
+		)
+		console.log(selfIntersectionPoly(nodes.map(n=>n.pos)).values().toArray())
+	}
 
 	simulatePhysics(
 		nodes, 
@@ -324,7 +343,7 @@ export function connectedTo(nodeId:number) {
 
 
 
-export function solvePressure(points: Node[], desiredArea: number, force:number) {
+function solvePressure(points: Node[], desiredArea: number, force:number) {
 	const a = area(points.map(p => p.pos))
 	const diff = relu(desiredArea - a)
 	const pressure = diff * force
@@ -336,3 +355,38 @@ export function solvePressure(points: Node[], desiredArea: number, force:number)
 		p.vel = p.vel.add(dir.multiply(pressure))
 	}
 }
+
+
+
+
+/**
+ * Creates a soft polygon and adds it to the simulation.
+ */
+export function makeSoftPoly(pos:Vector2D, points=8, len=50) {
+	const nodes:{node:Node, id:number}[] = []
+	let prevId:undefined|number
+	for (let i = 0; i < points; i++) {
+		const rad = Math.PI * 2 / points * i
+		const vec = new Vector2D(
+			Math.cos(rad),
+			Math.sin(rad)
+		).multiply(len)
+		const {id, node} = makeNode(pos.add(vec))
+		nodes.push({id, node})
+		if (prevId !== undefined) {
+			connect(id, prevId, len)
+		}
+		prevId = id
+	}
+	if (prevId !== undefined && nodes[0]) connect(prevId, nodes[0]!.id, len)
+
+	const softPoly:SoftPoly = {
+		nodes:nodes.map(n=>n.node),
+		area:areaRegPoly(points, len),
+		collides:[],
+	}
+
+	softPolys.push(softPoly)
+}
+
+makeSoftPoly(new Vector2D(200,100))

@@ -1,3 +1,4 @@
+import type { Line } from "./types";
 
 export function GET<T extends HTMLElement = HTMLElement>(id:string) {
 	const el = document.getElementById(id)
@@ -89,12 +90,60 @@ export class Vector2D {
 		return Math.sqrt((vec.x - this.x)**2 + (vec.y - this.y)**2)
 	}
 
+	/**
+	 * The result is:
+	 * - Positive if v is clockwise from u.
+	 * - Negative if v is counterclockwise from u.
+	 * - Zero if they are parallel.
+	 * 
+	 * Example:
+	 * 
+	 * u = (1,0) right
+	 * v = (0,1) down
+	 * 
+	 * Positive ⇒ turning clockwise from u to v.
+	 * 
+	 * u = (1,0) right
+	 * v = (0,-1) up
+	 * 
+	 * Negative ⇒ turning counterclockwise.
+	 */
 	cross(vec:Vector2D){
 		return this.x * vec.y - this.y * vec.x
 	}
 
+	/**
+	 * p.orient(a, b)
+	 *
+	 * Returns the orientation of point p relative to
+	 * the directed line a → b.
+	 *
+	 * > If I stand at a and look toward b,
+	 * > is p to the left or right?
+	 *
+	 * Positive  => p is on one side.
+	 * 
+	 * Negative  => p is on the other side.
+	 * 
+	 * Zero      => p lies on the line.
+	 */
 	orient(a:Vector2D, b:Vector2D) {
-		return a.sub(this).cross(b.sub(this))
+		return a.sub(b).cross(this.sub(b))
+	}
+
+	/**
+	 * Returns a rotated copy of this vector.
+	 *
+	 * Positive angles rotate clockwise in screen coordinates.
+	 */
+	rotated(deg:number) {
+		const rad = deg / 180 * Math.PI
+		const cos = Math.cos(rad)
+		const sin = Math.sin(rad)
+		return new Vector2D(
+			this.x * cos - this.y * sin,
+			this.x * sin + this.y * cos
+		)
 	}
 };
 
@@ -202,14 +251,58 @@ function segmentsIntersect(
 	b1: Vector2D,
 	b2: Vector2D
 ) {
-	const o1 = a1.orient(a2, b1)
-	const o2 = a1.orient(a2, b2)
+	const o1 = b1.orient(a2, a1)
+	const o2 = b2.orient(a2, a1)
 
-	const o3 = b1.orient(b2, a1)
-	const o4 = b1.orient(b2, a2)
+	const o3 = a1.orient(b2, b1)
+	const o4 = a2.orient(b2, b1)
 
 	return (
 		(o1 > 0) !== (o2 > 0) &&
 		(o3 > 0) !== (o4 > 0)
+	)
+}
+
+
+
+
+function slicePoint(l1: Line, l2: Line):{point:Vector2D, inSegment:boolean} {
+	const p = l1.a
+	const r = l1.b.sub(l1.a)
+
+	const q = l2.a
+	const s = l2.b.sub(l2.a)
+
+	const denom = r.cross(s)
+
+	if (denom === 0) {
+		throw new Error("Lines are parallel")
+	}
+
+	const t = q.sub(p).cross(s) / denom
+
+	const point = p.add(r.multiply(t))
+	return {
+		point,
+		inSegment:pointOnSegment(point, l1) && pointOnSegment(point, l2),
+	}
+}
+
+
+
+
+/**Assuming p is a point on the line between a and b */
+function pointOnSegment(p: Vector2D, l:Line) {
+	const minX = Math.min(l.a.x, l.b.x)
+	const maxX = Math.max(l.a.x, l.b.x)
+
+	const minY = Math.min(l.a.y, l.b.y)
+	const maxY = Math.max(l.a.y, l.b.y)
+
+	return (
+		p.x >= minX &&
+		p.x <= maxX &&
+		p.y >= minY &&
+		p.y <= maxY
 	)
 }
