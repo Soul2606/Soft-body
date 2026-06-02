@@ -1,5 +1,5 @@
-import type { Node, Spring } from "./types";
-import { area, areaRegPoly, GET, relu, selfIntersectionPoly, Vector2D } from "./utils.js";
+import type { Line, Node, Spring } from "./types";
+import { area, areaRegPoly, GET, getEdges, pointInPolygon, relu, selfIntersectionPoly, slicePoint, Vector2D } from "./utils.js";
 import type * as Ser from "./serialized-types.js";
 
 
@@ -154,7 +154,7 @@ const tick = () => {
 		solvePressure(
 			nodes,
 			area,
-			0.1
+			0.5 * deltaT
 		)
 		console.log(selfIntersectionPoly(nodes.map(n=>n.pos)).values().toArray())
 	}
@@ -266,10 +266,108 @@ function simulatePhysics(
 
 	for (const node of nodes.values()) {
 		node.vel.y += options.gravity * dt;
-		node.vel.sub(Vector2D.fromNum(options.drag * node.vel.length * dt))
+		node.vel.multiply(0.98)
 
-		node.pos.x += node.vel.x * dt;
-		node.pos.y = Math.min(node.pos.y + node.vel.y * dt, options.floor);
+		const thisSoftPoly = softPolys.find(sp => sp.nodes.includes(node))
+
+		/**Ultimate outcome of this ridiculous algorithm */
+		let finalPos:Vector2D|undefined
+		if (thisSoftPoly) {
+
+			const nPos = new Vector2D(node.pos.x + node.vel.x * dt, Math.min(node.pos.y + node.vel.y * dt, options.floor))
+			const l:Line = {a:Vector2D.from(node.pos), b:nPos}
+
+			for (const otherSoftPoly of softPolys) {
+				if (otherSoftPoly === thisSoftPoly) continue
+				if (!otherSoftPoly.collides.some(col => col.side === "in" && col.with === thisSoftPoly)) continue
+				const poly:Vector2D[] = otherSoftPoly.nodes.map(n => n.pos)
+				if (pointInPolygon(node.pos, poly)) {
+
+					let current:Line = {
+						a:Vector2D.from(l.a),
+						b:Vector2D.from(l.b)
+					}
+
+					for (const edge of getEdges(poly)) {
+						const coll = collideAndSlide(current, edge)
+						if (coll === undefined) break
+						current = coll.slide
+						finalPos = coll.slide.b
+					}
+	
+				} else {
+					const center = Vector2D.average(poly)
+					const lineToCen:Line = {
+						a:Vector2D.from(node.pos),
+						b:Vector2D.from(center),
+					}
+
+					const slice = getEdges(poly)
+					.map(edge => 
+						slicePoint(lineToCen, edge)
+					).filter(s =>
+						s.inSegment && s.point.distanceTo(node.pos) > 1e-3
+					).sort((a, b) =>
+						a.point.distanceTo(node.pos) - b.point.distanceTo(node.pos)
+					).at(0)
+
+					if (!slice) continue
+
+					finalPos = slice.point
+				}
+			}
+		}
+
+		if (finalPos) {
+			node.pos.x = finalPos.x
+			node.pos.y = finalPos.y
+		} else {
+			node.pos.x += node.vel.x * dt;
+			node.pos.y = Math.min(node.pos.y + node.vel.y * dt, options.floor);
+		}
+	}
+}
+
+
+
+
+type CollisionResult = {
+	approach: Line
+	slide: Line
+	impactForce: number
+}
+
+/**Simulates the change in trajectory when a line collides with a wall */
+function collideAndSlide(movement: Line,wall: Line): CollisionResult | undefined {
+	const slice = slicePoint(movement, wall)
+	if (!slice.inSegment) return
+	const moveVec = Vector2D.fromLine(movement)
+	const wallDir = Vector2D.fromLine(wall).normalized()
+
+	const approach: Line = {
+		a: movement.a,
+		b: slice.point
+	}
+
+	const traveled = Vector2D.fromLine(approach).length
+
+	const remaining = moveVec.length - traveled
+
+	const slideDistance = moveVec.normalized().dot(wallDir) * remaining
+
+	const slide: Line = {
+		a: slice.point,
+		b: slice.point.add(
+			wallDir.multiply(slideDistance)
+		)
+	}
+
+	const normalForce = Math.abs(moveVec.normalized().cross(wallDir)) * moveVec.length
+
+	return {
+		approach,
+		slide,
+		impactForce: normalForce
 	}
 }
 
@@ -389,4 +487,11 @@ export function makeSoftPoly(pos:Vector2D, points=8, len=50) {
 	softPolys.push(softPoly)
 }
 
-makeSoftPoly(new Vector2D(200,100))
+/*
+makeSoftPoly(new Vector2D(200, 100), 8, 100)
+makeSoftPoly(new Vector2D(200, 100), 8, 250)
+softPolys[1]!.collides.push({
+	side:"in",
+	with:softPolys[0]!
+})
+*/

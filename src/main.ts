@@ -273,3 +273,9 @@ get("load").addEventListener("click", () => {
 })
 
 
+
+
+get("left" ).addEventListener("click", () => {sim.cameraPos.x -= 50})
+get("up"   ).addEventListener("click", () => {sim.cameraPos.y -= 50})
+get("right").addEventListener("click", () => {sim.cameraPos.x += 50})
+get("down" ).addEventListener("click", () => {sim.cameraPos.y += 50})

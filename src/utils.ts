@@ -49,6 +49,10 @@ export class Vector2D {
 		return new Vector2D(x,x)
 	}
 
+	static fromLine(l:Line) {
+		return l.b.sub(l.a)
+	}
+
 	x: number
 	y: number
 	constructor(x:number = 0, y:number = 0){
@@ -58,6 +62,15 @@ export class Vector2D {
 
 	get length(): number {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+
+	set length(len:number) {
+		const current = this.length
+
+		if (current === 0) throw new Error("Cannot set length of zero vector");
+		
+		this.x *= len / current
+		this.y *= len / current
 	}
 
 	add(other: Vector2D): Vector2D {
@@ -145,6 +158,18 @@ export class Vector2D {
 			this.x * sin + this.y * cos
 		)
 	}
+
+	dot(v: Vector2D): number {
+		return this.x * v.x + this.y * v.y
+	}
+
+	/**Returns entire vector from this to other. */
+	vectorTo(other: Vector2D): Vector2D {
+		return new Vector2D(
+			other.x - this.x,
+			other.y - this.y
+		)
+	}
 };
 
 
@@ -194,7 +219,7 @@ export function areaRegPoly(cornersAmount: number, edgeLen: number) {
 
 
 /**Assumes each point is connected in a loop. */
-export function selfIntersectionPoly(points: Vector2D[]) {
+export function selfIntersectionPoly(points: Vector2D[]):Set<number> {
 	function edgesAdjacent(
 		i: number,
 		j: number,
@@ -266,7 +291,7 @@ function segmentsIntersect(
 
 
 
-function slicePoint(l1: Line, l2: Line):{point:Vector2D, inSegment:boolean} {
+export function slicePoint(l1: Line, l2: Line):{point:Vector2D, inSegment:boolean} {
 	const p = l1.a
 	const r = l1.b.sub(l1.a)
 
@@ -305,4 +330,41 @@ function pointOnSegment(p: Vector2D, l:Line) {
 		p.y >= minY &&
 		p.y <= maxY
 	)
+}
+
+
+
+
+export function pointInPolygon(
+	point: Vector2D,
+	polygon: readonly Vector2D[]
+): boolean {
+	let inside = false
+
+	for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+		const a = polygon[i]!
+		const b = polygon[j]!
+
+		const intersects =
+			(a.y > point.y) !== (b.y > point.y) &&
+			point.x <
+				((b.x - a.x) * (point.y - a.y)) /
+					(b.y - a.y) +
+				a.x
+
+		if (intersects) inside = !inside
+	}
+
+	return inside
+}
+
+
+
+
+export function getEdges(polygon:readonly Vector2D[]):Line[] {
+	if (polygon.length < 2) return []
+	return polygon.map((p,i) => ({
+		a:p,
+		b:polygon[(i+1) % polygon.length]!
+	}))
 }
