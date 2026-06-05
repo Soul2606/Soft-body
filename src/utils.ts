@@ -291,7 +291,7 @@ function segmentsIntersect(
 
 
 
-export function slicePoint(l1: Line, l2: Line):{point:Vector2D, inSegment:boolean} {
+export function slicePoint(l1: Line, l2: Line):{point:Vector2D, inSegment:boolean}|null {
 	const p = l1.a
 	const r = l1.b.sub(l1.a)
 
@@ -300,9 +300,7 @@ export function slicePoint(l1: Line, l2: Line):{point:Vector2D, inSegment:boolea
 
 	const denom = r.cross(s)
 
-	if (denom === 0) {
-		throw new Error("Lines are parallel")
-	}
+   if (Math.abs(denom) < 1e-9) return null
 
 	const t = q.sub(p).cross(s) / denom
 

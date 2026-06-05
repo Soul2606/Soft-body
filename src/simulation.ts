@@ -10,7 +10,12 @@ type DrawFnc = (args:{ctx:CanvasRenderingContext2D, delta:number})=>void
 type SoftPoly = {
 	nodes:Node[]
 	area:number
-	collides:{with:SoftPoly, side:"in"|"out"}[]
+}
+
+
+type CollisionHierarchy = {
+	softPoly:SoftPoly
+	contains:CollisionHierarchy[]
 }
 
 
@@ -34,6 +39,7 @@ const drawQueue = {
 var mouseAttached:undefined|number
 
 var softPolys:SoftPoly[] = []
+var softPolyCollision:CollisionHierarchy[] = []
 
 
 
@@ -112,7 +118,7 @@ export function getMouseAttach() {
 let now = Date.now()
 const tick = () => {
 	let n = Date.now()
-	const deltaT = (n - now) / 1000
+	const deltaT = Math.min(2, (n - now) / 1000)
 	now = n
 	
 	ctx.setTransform(1,0,0,1,0,0)
@@ -156,7 +162,6 @@ const tick = () => {
 			area,
 			0.5 * deltaT
 		)
-		console.log(selfIntersectionPoly(nodes.map(n=>n.pos)).values().toArray())
 	}
 
 	simulatePhysics(
@@ -276,10 +281,13 @@ function simulatePhysics(
 
 			const nPos = new Vector2D(node.pos.x + node.vel.x * dt, Math.min(node.pos.y + node.vel.y * dt, options.floor))
 			const l:Line = {a:Vector2D.from(node.pos), b:nPos}
+			const colRules = findCollisionLayer(thisSoftPoly)
 
 			for (const otherSoftPoly of softPolys) {
+				if (colRules === undefined) continue
 				if (otherSoftPoly === thisSoftPoly) continue
-				if (!otherSoftPoly.collides.some(col => col.side === "in" && col.with === thisSoftPoly)) continue
+				if (otherSoftPoly !== colRules.parent?.softPoly) continue
+				
 				const poly:Vector2D[] = otherSoftPoly.nodes.map(n => n.pos)
 				if (pointInPolygon(node.pos, poly)) {
 
@@ -288,14 +296,25 @@ function simulatePhysics(
 						b:Vector2D.from(l.b)
 					}
 
-					for (const edge of getEdges(poly)) {
+					for (const [idx, edge] of getEdges(poly).entries()) {
 						const coll = collideAndSlide(current, edge)
 						if (coll === undefined) break
+						const moveVec = Vector2D.fromLine(current).normalized()
+						const forceVec = moveVec.multiply(moveVec)
+						node.vel = node.vel.sub(forceVec.multiply(0.5))
+						const na = otherSoftPoly.nodes[idx]
+						const nb = otherSoftPoly.nodes[idx]
+						if (na && nb) {
+							na.vel = na.vel.add(forceVec.multiply(0.25))
+							nb.vel = nb.vel.add(forceVec.multiply(0.25))
+						}
 						current = coll.slide
 						finalPos = coll.slide.b
 					}
 	
 				} else {
+					//This only works if the parent is not concave.
+					stdMove()
 					const center = Vector2D.average(poly)
 					const lineToCen:Line = {
 						a:Vector2D.from(node.pos),
@@ -305,6 +324,8 @@ function simulatePhysics(
 					const slice = getEdges(poly)
 					.map(edge => 
 						slicePoint(lineToCen, edge)
+					).filter(s =>
+						s !== null
 					).filter(s =>
 						s.inSegment && s.point.distanceTo(node.pos) > 1e-3
 					).sort((a, b) =>
@@ -322,10 +343,15 @@ function simulatePhysics(
 			node.pos.x = finalPos.x
 			node.pos.y = finalPos.y
 		} else {
+			stdMove()
+		}
+
+		function stdMove() {
 			node.pos.x += node.vel.x * dt;
 			node.pos.y = Math.min(node.pos.y + node.vel.y * dt, options.floor);
 		}
 	}
+
 }
 
 
@@ -340,6 +366,7 @@ type CollisionResult = {
 /**Simulates the change in trajectory when a line collides with a wall */
 function collideAndSlide(movement: Line,wall: Line): CollisionResult | undefined {
 	const slice = slicePoint(movement, wall)
+	if (slice === null) return
 	if (!slice.inSegment) return
 	const moveVec = Vector2D.fromLine(movement)
 	const wallDir = Vector2D.fromLine(wall).normalized()
@@ -481,17 +508,42 @@ export function makeSoftPoly(pos:Vector2D, points=8, len=50) {
 	const softPoly:SoftPoly = {
 		nodes:nodes.map(n=>n.node),
 		area:areaRegPoly(points, len),
-		collides:[],
 	}
 
 	softPolys.push(softPoly)
 }
 
-/*
-makeSoftPoly(new Vector2D(200, 100), 8, 100)
-makeSoftPoly(new Vector2D(200, 100), 8, 250)
-softPolys[1]!.collides.push({
-	side:"in",
-	with:softPolys[0]!
-})
-*/
+
+makeSoftPoly(new Vector2D(200, 100), 6, 50)
+makeSoftPoly(new Vector2D(200, 100), 8, 60)
+softPolyCollision = [
+	{
+		softPoly: softPolys[1]!,
+		contains:[
+			{
+				softPoly: softPolys[0]!,
+				contains:[]
+			}
+		]
+	}
+]
+console.log(softPolyCollision);
+
+
+
+
+
+
+function findCollisionLayer(sp:SoftPoly) {
+	return recurse(softPolyCollision)
+	function recurse(current:CollisionHierarchy[], parent:null|CollisionHierarchy = null):{current:CollisionHierarchy, parent:null|CollisionHierarchy}|undefined {
+		for (const col of current) {
+			if (col.softPoly === sp) return {
+				current:col,
+				parent,
+			}
+			const res = recurse(col.contains, col)
+			if (res) return res
+		}
+	}
+}
