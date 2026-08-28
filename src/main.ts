@@ -1,6 +1,7 @@
-import * as sim from "./simulation.js"
-import type { Node, Spring } from "./types.js"
-import { distanceToLine, GET as get } from "./utils.js"
+import * as sim from "./simulation/simulation.js"
+import * as api from "./simulation/api.js"
+import type { Node, Spring } from "./simulation/types.js"
+import { distanceToLine, GET as get } from "./simulation/utils.js"
 
 
 const infoList = get<HTMLUListElement>("info")
@@ -138,14 +139,14 @@ sim.canvas.addEventListener("mousemove", e => {
 
 
 	if (mouseState === "move" && interacting) {
-		sim.moveTo(sim.mousePosition, interacting)
+		api.moveTo(sim.mousePosition, interacting)
 	}
 })
 
 
 
 
-sim.addToAnimationFrame(ctx => {
+api.addToAnimationFrame(ctx => {
 	const mPos = sim.mousePosition
 
 	if (mouseState === "make") {
@@ -246,29 +247,27 @@ function closestSpring(spr:Spring[], maxDistance = Infinity) {
 
 
 get("save").addEventListener("click", () => {
-	console.log(sim.toSave());
+	console.log(api.toSave());
 	interacting = undefined
 })
 
 
 
 
-get("load").addEventListener("click", () => {
-	sim.load("/saves/orb.json").then(res => {
-		for (const node of res.nodes) {
-			sim.makeNode(node.pos)
-		}
+get("load").addEventListener("click", async () => {
+	const res = await api.load("/saves/orb.json")
+	for (const node of res.nodes) {
+		sim.makeNode(node.pos)
+	}
 
-
-		for (const spring of res.struts) {
-			sim.connect(
-				spring.connection.a,
-				spring.connection.b,
-				spring.length,
-				spring.dampening,
-				spring.stiffness,
-			)
-		}
-	})
+	for (const spring of res.struts) {
+		sim.connect(
+			spring.connection.a,
+			spring.connection.b,
+			spring.length,
+			spring.dampening,
+			spring.stiffness,
+		)
+	}
 })
 

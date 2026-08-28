@@ -1,4 +1,4 @@
-import type { Vector2D } from "./utils.js";
+import type { Vector2D } from "../lib/math/vector2d.js";
 
 
 export type Connection = { a: number; b: number; };
