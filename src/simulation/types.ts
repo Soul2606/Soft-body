@@ -18,3 +18,11 @@ export type Spring = {
 	connection: Connection;
 };
 
+
+
+export type Triangle = {
+	a:Node,
+	b:Node,
+	c:Node
+}
+

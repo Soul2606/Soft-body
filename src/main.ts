@@ -74,17 +74,17 @@ sim.canvas.addEventListener("click", e => {
 			sim.setMouseAttach()
 			return
 		}
-		let closest = closestNode(sim.nodes.entries().toArray(), 10)
+		let closest = api.closestNode(10)
 		if (!closest) return
 		sim.setMouseAttach(closest[0])
 	}
 
 
 	if (mouseState === "delete") {
-		const node = closestNode(sim.nodes.entries().toArray(), 10)
+		const node = api.closestNode(10)
 
 		if (node === undefined) {
-			const spring = closestSpring(sim.struts.values().toArray(), 10)
+			const spring = closestSpring(10)
 			if (spring === undefined) return
 			sim.struts.delete(spring)
 			return
@@ -103,7 +103,7 @@ sim.canvas.addEventListener("click", e => {
 
 
 	if (mouseState === "connect") {
-		const node = closestNode(sim.nodes.entries().toArray(), 10)
+		const node = api.closestNode(10)
 		if (node === undefined) return
 		if (interacting === undefined) {
 			interacting = node[0]
@@ -116,7 +116,7 @@ sim.canvas.addEventListener("click", e => {
 
 
 	if (mouseState === "move") {
-		const closest = closestNode(sim.nodes.entries().toArray(), 10)
+		const closest = api.closestNode(10)
 		if (!closest) return
 
 		interacting = closest[0]
@@ -184,33 +184,8 @@ function validConnections() {
 
 
 
-function closestNode(
-	nodes: [number, Node][],
-	maxDistance = Infinity
-) {
-	const mPos  = sim.mousePosition
-
-	nodes = nodes.filter(([key,val]) =>
-		val.pos.distanceTo(mPos) < maxDistance
-	)
-
-	let distance = Infinity
-	let node:[number, Node]|undefined
-	for (const [id, val] of nodes) {
-		const dist = val.pos.distanceTo(mPos)
-		if (distance > dist) {
-			distance = dist
-			node = [id, val]
-		}
-	}
-
-	return node
-}
-
-
-
-
-function closestSpring(spr:Spring[], maxDistance = Infinity) {
+function closestSpring(maxDistance = Infinity) {
+	let spr = sim.struts.values().toArray()
 	const mPos = sim.mousePosition
 	const springs = spr.map(val => {
 		const nodeA = sim.nodes.get(val.connection.a)

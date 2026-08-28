@@ -1,5 +1,6 @@
 import { Vector2D } from "../lib/math/vector2d.js";
 import type * as Ser from "./serialized-types.js";
+import * as sim from "./simulation.js";
 import { type DrawFnc, drawQueue, nodes, struts } from "./simulation.js";
 import type { Spring, Node } from "./types.js";
 
@@ -75,5 +76,25 @@ export function toSave(): { nodes: Ser.Node[]; struts: Spring[]; } {
 export function addToAnimationFrame(fnc: DrawFnc) {
 	drawQueue.persist.add(fnc);
 	return () => drawQueue.persist.delete(fnc);
+}
+export function closestNode(
+	maxDistance = Infinity) {
+	let nodes = sim.nodes.entries().toArray()
+	const mPos = sim.mousePosition
+
+	nodes = nodes.filter(([key, val]) => val.pos.distanceTo(mPos) < maxDistance
+	)
+
+	let distance = Infinity
+	let node: [number, Node] | undefined
+	for (const [id, val] of nodes) {
+		const dist = val.pos.distanceTo(mPos)
+		if (distance > dist) {
+			distance = dist
+			node = [id, val]
+		}
+	}
+
+	return node
 }
 
