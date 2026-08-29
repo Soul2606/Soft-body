@@ -1,5 +1,5 @@
 import { Vector2D } from "../lib/math/vector2d.js";
-import type { Spring } from "./types.js";
+import type { Connection, Spring, Triangle } from "./types.js";
 
 export function GET<T extends HTMLElement = HTMLElement>(id:string) {
 	const el = document.getElementById(id)
@@ -103,5 +103,35 @@ export function simStruts(
 		simSpring(b, a, spring.length, spring.stiffness, spring.dampening, dt);
 	}
 
+}
+
+
+
+
+export function triangles(connections: Connection[]): Triangle[] {
+	const links = new Map<number, Set<number>>()
+
+	for (const {a, b} of connections) {
+		if (!links.has(a)) links.set(a, new Set())
+		if (!links.has(b)) links.set(b, new Set())
+
+		links.get(a)!.add(b)
+		links.get(b)!.add(a)
+	}
+
+	const result: Triangle[] = []
+
+	for (const [a, bs] of links) {
+		for (const b of bs) {
+			if (b <= a) continue
+
+			for (const c of links.get(b)!) {
+				if (c <= b) continue
+				if (bs.has(c)) result.push({a, b, c})
+			}
+		}
+	}
+
+	return result
 }
 

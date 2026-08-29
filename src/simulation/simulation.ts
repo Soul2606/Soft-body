@@ -1,6 +1,7 @@
 import type { Node, Spring } from "./types";
 import { GET, simSpring, simStruts } from "./utils.js";
 import { Vector2D } from "../lib/math/vector2d.js";
+import { mouseAttached } from "./api.js";
 
 
 export type DrawFnc = (ctx:CanvasRenderingContext2D)=>void
@@ -23,30 +24,6 @@ export const drawQueue = {
 	once:      new Set<DrawFnc>(),
 }
 
-var mouseAttached:undefined|number
-
-
-
-
-let nextId = 0
-export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0)) {
-	nextId++
-	while (nodes.has(nextId)) {
-		nextId++
-	}
-	let id = nextId
-	const node:Node = {
-		pos:Vector2D.from(position),
-		vel:Vector2D.from(velocity),
-		locked:false,
-	}
-	nodes.set(id, node)
-	return { id, node }
-}
-
-
-
-
 /**Constantly mutated to match mouse position in world. */
 export const mousePosition:Readonly<Vector2D> = mousePos
 
@@ -55,38 +32,6 @@ canvas.addEventListener("mousemove", e=>{
 	mousePos.x = e.clientX - rect.left + cameraPos.x
 	mousePos.y = e.clientY - rect.top + cameraPos.y
 })
-
-
-
-
-export function connect(idA:number, idB:number, length?:number, dampening = 2, stiffness = 50) {
-	const nodeA = nodes.get(idA)
-	const nodeB = nodes.get(idB)
-	if (!nodeA || !nodeB) return false
-	const len = length === undefined ? nodeA.pos.distanceTo(nodeB.pos) : length
-
-	const spring:Spring = {
-		connection:{a:idA, b:idB},
-		dampening,
-		stiffness,
-		length:len,
-	}
-
-	struts.add(spring)
-
-	return spring
-}
-
-
-
-
-export function setMouseAttach(id?:number) {
-	mouseAttached = id
-}
-
-export function getMouseAttach() {
-	return mouseAttached
-}
 
 
 

@@ -21,8 +21,8 @@ export type Spring = {
 
 
 export type Triangle = {
-	a:Node,
-	b:Node,
-	c:Node
+	a:number,
+	b:number,
+	c:number
 }
 

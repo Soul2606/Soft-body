@@ -5,6 +5,93 @@ import { type DrawFnc, drawQueue, nodes, struts } from "./simulation.js";
 import type { Spring, Node } from "./types.js";
 
 
+export const canvas = sim.canvas
+
+export const mousePosition = sim.mousePosition
+
+
+
+let nextId = 0
+export function makeNode(position:Vector2D, velocity:Vector2D = new Vector2D(0,0)) {
+	nextId++
+	while (nodes.has(nextId)) {
+		nextId++
+	}
+	let id = nextId
+	const node:Node = {
+		pos:Vector2D.from(position),
+		vel:Vector2D.from(velocity),
+		locked:false,
+	}
+	nodes.set(id, node)
+	return { id, node }
+}
+
+
+
+
+export function connect(idA: number, idB: number, length?: number, dampening = 2, stiffness = 50) {
+	const nodeA = nodes.get(idA);
+	const nodeB = nodes.get(idB);
+	if (!nodeA || !nodeB) return false;
+	const len = length === undefined ? nodeA.pos.distanceTo(nodeB.pos) : length;
+
+	const spring: Spring = {
+		connection: { a: idA, b: idB },
+		dampening,
+		stiffness,
+		length: len,
+	};
+
+	struts.add(spring);
+
+	return spring;
+}
+
+
+
+
+export function deleteNode(id:number){
+	nodes.delete(id)
+
+	const connecting = sim.struts.values().toArray().filter(v =>
+		v.connection.a === id || v.connection.b === id
+	)
+
+	for (const c of connecting) {
+		deleteStrut(c)
+	}
+}
+
+
+export function deleteStrut(strut:Spring) {
+	struts.delete(strut)
+}
+
+
+
+
+export function getNodes() {
+	return new Map<number, Node>(
+		nodes
+		.entries()
+		.toArray()
+		.map<[number, Node]>(([key, val]) => ([
+			key,
+			{
+				locked:val.locked,
+				pos:Vector2D.from(val.pos),
+				vel:Vector2D.from(val.vel)
+			} satisfies Node
+		]))
+	)
+}
+
+export function getStruts() {
+	return new Set<Spring>(structuredClone(struts.values().toArray()))
+}
+
+
 
 
 export function moveTo(target: Vector2D, nodeId: number) {
@@ -97,4 +184,18 @@ export function closestNode(
 
 	return node
 }
+
+
+
+
+export var mouseAttached: undefined | number;
+
+export function setMouseAttach(id?:number) {
+	mouseAttached = id
+}
+
+export function getMouseAttach() {
+	return mouseAttached
+}
+
 
