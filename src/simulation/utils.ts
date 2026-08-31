@@ -1,5 +1,6 @@
+import { Line } from "../lib/math/line.js";
 import { Vector2D } from "../lib/math/vector2d.js";
-import type { Connection, Spring, Triangle } from "./types.js";
+import type { Connection, Node, Spring, Triangle } from "./types.js";
 
 export function GET<T extends HTMLElement = HTMLElement>(id:string) {
 	const el = document.getElementById(id)
@@ -133,5 +134,60 @@ export function triangles(connections: Connection[]): Triangle[] {
 	}
 
 	return result
+}
+
+
+
+
+function isClockwise(nodes:[[number, Node], [number, Node], [number, Node]]) {
+	const l = new Line(nodes[0][1].pos, nodes[1][1].pos);
+	return l.orient(nodes[2][1].pos) < 0
+}
+
+
+
+
+export function clockwise(nodes:[[number, Node], [number, Node], [number, Node]]):[number, number, number] {
+	if (isClockwise(nodes)) {
+		return [
+			nodes[0][0],
+			nodes[1][0],
+			nodes[2][0],
+		]
+	} else {
+		return [
+			nodes[0][0],
+			nodes[2][0],
+			nodes[1][0],
+		]
+	}
+}
+
+console.log(clockwise([
+	[0, {locked:false, pos:new Vector2D(0, 0), vel: new Vector2D()}],
+	[1, {locked:false, pos:new Vector2D(-1, 0), vel: new Vector2D()}],
+	[2, {locked:false, pos:new Vector2D(-1, 1), vel: new Vector2D()}]
+]))
+
+
+
+
+export function correctTriangle(triangle:[number, number, number], nodes:Map<number, Node>) {
+	const n0 = nodes.get(triangle[0])
+	const n1 = nodes.get(triangle[1])
+	const n2 = nodes.get(triangle[2])
+	if (!n0 || !n1 || !n2) throw new Error("error");
+	
+	if (
+		isClockwise([
+			[triangle[0], n0],
+			[triangle[1], n1],
+			[triangle[2], n2],
+		])
+	) {
+		return
+	}
+
+
 }
 

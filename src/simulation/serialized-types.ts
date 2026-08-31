@@ -10,4 +10,5 @@ export type Node = {
 	pos:Vector2D;
 	vel:Vector2D;
 	locked:boolean;
+	id:number
 };

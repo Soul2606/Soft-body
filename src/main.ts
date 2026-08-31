@@ -221,20 +221,8 @@ get("save").addEventListener("click", () => {
 
 
 
-get("load").addEventListener("click", async () => {
-	const res = await Sim.load("/saves/orb.json")
-	for (const node of res.nodes) {
-		Sim.makeNode(node.pos)
-	}
-
-	for (const spring of res.struts) {
-		Sim.connect(
-			spring.connection.a,
-			spring.connection.b,
-			spring.length,
-			spring.dampening,
-			spring.stiffness,
-		)
-	}
+get("load").addEventListener("click", () => {
+	Sim.load("/saves/orb.json")
 })
+
 

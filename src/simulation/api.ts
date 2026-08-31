@@ -131,15 +131,27 @@ export function connectedTo(nodeId: number) {
 
 export async function load(url: string) {
 	const json: { nodes: Ser.Node[]; struts: Spring[]; } = await (await fetch(url)).json();
+	const nodes = json.nodes
+	const struts = json.struts
+	const idMap = new Map<number, number>()
 
-	return {
-		nodes: json.nodes.map<Node>(n => ({
-			pos: new Vector2D(n.pos.x, n.pos.y),
-			vel: new Vector2D(n.pos.x, n.pos.y),
-			locked: false,
-		})),
-		struts: json.struts,
-	};
+	for (const node of nodes) {
+		const {id} = makeNode(
+			new Vector2D(node.pos.x, node.pos.y),
+			new Vector2D(node.vel.x, node.vel.y)
+		)
+		idMap.set(node.id, id)
+	}
+
+	for (const spring of struts) {
+		connect(
+			idMap.get(spring.connection.a)!,
+			idMap.get(spring.connection.b)!,
+			spring.length,
+			spring.dampening,
+			spring.stiffness,
+		)
+	}
 }
 
 
@@ -152,7 +164,7 @@ export function toSave(): { nodes: Ser.Node[]; struts: Spring[]; } {
 			pos: { x: node.pos.x, y: node.pos.y },
 			vel: { x: node.vel.x, y: node.vel.y },
 			locked: node.locked,
-		})),
+		} satisfies Ser.Node)),
 		struts: struts.values().toArray().map(s => structuredClone(s))
 	};
 }
