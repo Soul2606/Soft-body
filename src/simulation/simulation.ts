@@ -121,7 +121,7 @@ function simulatePhysics(
 
 	for (const node of nodes.values()) {
 		node.vel.y += options.gravity * dt;
-		node.vel.subtract(new Vector2D(options.drag * node.vel.length * dt))
+		node.vel.scale(1 - options.drag * dt)
 
 		node.pos.x += node.vel.x * dt;
 		node.pos.y = Math.min(node.pos.y + node.vel.y * dt, options.floor);

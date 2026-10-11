@@ -41,18 +41,26 @@ export function correct(nodes:Map<number, Node>) {
 			node:n1
 		}
 	
-		const group = [l1, l2].reduce((pre, line) =>
-			line.line.length > pre.line.length ? line : pre,
-			l0
-		)
-	
-		group.node.pos = reflectPoint(
-			group.node.pos,
-			group.line.a,
-			group.line.b
+		const group = [l0, l1, l2].sort((a,b) => 
+			a.line.length - b.line.length
 		)
 
-		group.node.vel.divide(2)
+		const short = group[2]!
+		const opposing = [group[1]!, group[0]!]
+	
+		short.node.pos = reflectPoint(
+			short.node.pos,
+			short.line.a,
+			short.line.b
+		)
+
+		const av = group.reduce((prev, l) => 
+			prev.add(l.node.vel)
+		, new Vector2D())
+
+		for (const node of group) {
+			node.node.vel.add(av).divide(4)
+		}
 	}
 }
 
