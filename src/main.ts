@@ -71,7 +71,7 @@ Sim.canvas.addEventListener("click", e => {
 
 
 	if (mouseState === "drag") {
-		if (Sim.getMouseAttach() !== undefined) {
+		if (Sim.mouseAttached !== undefined) {
 			Sim.setMouseAttach()
 			return
 		}
@@ -87,7 +87,7 @@ Sim.canvas.addEventListener("click", e => {
 		if (node === undefined) {
 			const spring = closestSpring(10)
 			if (spring === undefined) return
-			Sim.deleteStrut(spring)
+			Sim.deleteStrut(spring.connection.a, spring.connection.b)
 			return
 		}
 

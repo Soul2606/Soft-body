@@ -3,6 +3,7 @@ import type * as Ser from "./serialized-types.js";
 import * as sim from "./simulation.js";
 import { type DrawFnc, drawQueue, nodes, struts } from "./simulation.js";
 import type { Spring, Node } from "./types.js";
+import * as TriAl from "./triangle-alignment.js";
 
 
 export const canvas = sim.canvas
@@ -42,10 +43,10 @@ export function connect(idA: number, idB: number, length?: number, dampening = 2
 		stiffness,
 		length: len,
 	};
-
+	
 	struts.add(spring);
 
-	return spring;
+	return structuredClone(spring);
 }
 
 
@@ -59,13 +60,16 @@ export function deleteNode(id:number){
 	)
 
 	for (const c of connecting) {
-		deleteStrut(c)
+		struts.delete(c)
 	}
 }
 
 
-export function deleteStrut(strut:Spring) {
-	struts.delete(strut)
+export function deleteStrut(idA:number, idB:number) {
+	const strut = struts.values().toArray().find(s =>
+		s.connection.a === idA && s.connection.b === idB
+	)
+	if (strut) struts.delete(strut)
 }
 
 
@@ -176,6 +180,10 @@ export function addToAnimationFrame(fnc: DrawFnc) {
 	drawQueue.persist.add(fnc);
 	return () => drawQueue.persist.delete(fnc);
 }
+
+
+
+
 export function closestNode(
 	maxDistance = Infinity) {
 	let nodes = sim.nodes.entries().toArray()
@@ -204,10 +212,6 @@ export var mouseAttached: undefined | number;
 
 export function setMouseAttach(id?:number) {
 	mouseAttached = id
-}
-
-export function getMouseAttach() {
-	return mouseAttached
 }
 
 
