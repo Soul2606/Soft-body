@@ -2,6 +2,7 @@ import type { Node, Spring } from "./types";
 import { GET, simSpring, simStruts } from "./utils.js";
 import { Vector2D } from "../lib/math/vector2d.js";
 import { mouseAttached } from "./api.js";
+import * as TriAl from "./triangle-alignment.js";
 
 
 export type DrawFnc = (ctx:CanvasRenderingContext2D)=>void
@@ -87,6 +88,8 @@ const tick = () => {
 			drag:0.4,
 		}
 	)
+
+	TriAl.correct(nodes)
 
 	requestAnimationFrame(tick)
 }

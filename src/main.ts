@@ -1,4 +1,6 @@
+import { Vector2D } from "./lib/math/vector2d.js";
 import * as Sim from "./simulation/api.js"
+import * as TriAl from "./simulation/triangle-alignment.js";
 import type { Node } from "./simulation/types.js"
 import { distanceToLine, GET as get } from "./simulation/utils.js"
 
@@ -226,3 +228,10 @@ get("load").addEventListener("click", () => {
 })
 
 
+// It does not work!
+{
+	const n1 = Sim.makeNode(new Vector2D(100,100))
+	const n2 = Sim.makeNode(new Vector2D(200,100))
+	const n3 = Sim.makeNode(new Vector2D(150,200))
+	TriAl.add(n1.id, n2.id, n3.id, Sim.getNodes())
+}

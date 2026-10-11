@@ -1,6 +1,5 @@
-import { Line } from "../lib/math/line.js";
 import { Vector2D } from "../lib/math/vector2d.js";
-import type { Connection, Node, Spring, Triangle } from "./types.js";
+import type { Connection, Node, Spring } from "./types.js";
 
 export function GET<T extends HTMLElement = HTMLElement>(id:string) {
 	const el = document.getElementById(id)
@@ -109,85 +108,4 @@ export function simStruts(
 
 
 
-export function triangles(connections: Connection[]): Triangle[] {
-	const links = new Map<number, Set<number>>()
-
-	for (const {a, b} of connections) {
-		if (!links.has(a)) links.set(a, new Set())
-		if (!links.has(b)) links.set(b, new Set())
-
-		links.get(a)!.add(b)
-		links.get(b)!.add(a)
-	}
-
-	const result: Triangle[] = []
-
-	for (const [a, bs] of links) {
-		for (const b of bs) {
-			if (b <= a) continue
-
-			for (const c of links.get(b)!) {
-				if (c <= b) continue
-				if (bs.has(c)) result.push({a, b, c})
-			}
-		}
-	}
-
-	return result
-}
-
-
-
-
-function isClockwise(nodes:[[number, Node], [number, Node], [number, Node]]) {
-	const l = new Line(nodes[0][1].pos, nodes[1][1].pos);
-	return l.orient(nodes[2][1].pos) < 0
-}
-
-
-
-
-export function clockwise(nodes:[[number, Node], [number, Node], [number, Node]]):[number, number, number] {
-	if (isClockwise(nodes)) {
-		return [
-			nodes[0][0],
-			nodes[1][0],
-			nodes[2][0],
-		]
-	} else {
-		return [
-			nodes[0][0],
-			nodes[2][0],
-			nodes[1][0],
-		]
-	}
-}
-
-console.log(clockwise([
-	[0, {locked:false, pos:new Vector2D(0, 0), vel: new Vector2D()}],
-	[1, {locked:false, pos:new Vector2D(-1, 0), vel: new Vector2D()}],
-	[2, {locked:false, pos:new Vector2D(-1, 1), vel: new Vector2D()}]
-]))
-
-
-
-
-export function correctTriangle(triangle:[number, number, number], nodes:Map<number, Node>) {
-	const n0 = nodes.get(triangle[0])
-	const n1 = nodes.get(triangle[1])
-	const n2 = nodes.get(triangle[2])
-	if (!n0 || !n1 || !n2) throw new Error("error");
-	
-	if (
-		isClockwise([
-			[triangle[0], n0],
-			[triangle[1], n1],
-			[triangle[2], n2],
-		])
-	) {
-		return
-	}
-
-
-}
 

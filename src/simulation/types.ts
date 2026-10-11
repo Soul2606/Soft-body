@@ -17,12 +17,3 @@ export type Spring = {
 	dampening: number;
 	connection: Connection;
 };
-
-
-
-export type Triangle = {
-	a:number,
-	b:number,
-	c:number
-}
-
