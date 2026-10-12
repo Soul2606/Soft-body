@@ -23,7 +23,7 @@ export function correct(nodes:Map<number, Node>) {
 		if (!n0 || !n1 || !n2) throw new Error("error");
 		
 		if (
-			isClockwise([n0, n1, n2])
+			isClockwise(n0, n1, n2)
 		) {
 			continue
 		}
@@ -67,9 +67,9 @@ export function correct(nodes:Map<number, Node>) {
 
 
 
-function isClockwise(nodes:[Node, Node, Node]) {
-	const l = new Line(nodes[0].pos, nodes[1].pos);
-	return l.orient(nodes[2].pos) < 0
+function isClockwise(node0:Node, node1:Node, node2:Node) {
+	const l = new Line(node0.pos, node1.pos);
+	return l.orient(node2.pos) < 0
 }
 
 
@@ -81,7 +81,7 @@ function clockwise(triangle:Triangle, nodes:Map<number, Node>):Triangle {
 	const n2 = nodes.get(triangle.c)
 	if (!n0 || !n1 || !n2) throw new Error("error");
 
-	if (isClockwise([n0, n1, n2])) {
+	if (isClockwise(n0, n1, n2)) {
 		return {
 			a:triangle.a,
 			b:triangle.b,
@@ -90,8 +90,8 @@ function clockwise(triangle:Triangle, nodes:Map<number, Node>):Triangle {
 	} else {
 		return {
 			a:triangle.a,
-			c:triangle.c,
-			b:triangle.b,
+			b:triangle.c,
+			c:triangle.b,
 		}
 	}
 }

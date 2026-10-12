@@ -43,6 +43,14 @@ export function connect(idA: number, idB: number, length?: number, dampening = 2
 		stiffness,
 		length: len,
 	};
+
+	const commons = connectedTo(idA).filter(id =>
+		connectedTo(idB).includes(id)
+	)
+
+	for (const common of commons) {
+		TriAl.add(idA, idB, common, nodes)
+	}
 	
 	struts.add(spring);
 
@@ -102,7 +110,7 @@ export function moveTo(target: Vector2D, nodeId: number) {
 	const node = nodes.get(nodeId);
 	if (!node) return false;
 
-	const connected = connectedTo(nodeId);
+	const connected = connectedStruts(nodeId);
 	if (!connected) return false;
 
 
@@ -122,12 +130,32 @@ export function moveTo(target: Vector2D, nodeId: number) {
 
 
 
-export function connectedTo(nodeId: number) {
+export function connectedStruts(nodeId: number) {
 	const node = nodes.get(nodeId);
-	if (!node) return;
+	if (!node) return [];
 
-	return struts.values().toArray().filter(spr => spr.connection.a === nodeId || spr.connection.b === nodeId
-	);
+	return structuredClone(
+		struts
+		.values()
+		.toArray()
+		.filter(spr => 
+			spr.connection.a === nodeId || spr.connection.b === nodeId
+		)
+	)
+}
+
+
+
+export function connectedTo(nodeId:number) {
+	const ids:number[] = []
+	for (const strut of connectedStruts(nodeId)) {
+		if (strut.connection.a === nodeId) {
+			ids.push(strut.connection.b)
+		} else {
+			ids.push(strut.connection.a)
+		}
+	}
+	return ids
 }
 
 

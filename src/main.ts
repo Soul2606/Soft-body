@@ -226,12 +226,3 @@ get("save").addEventListener("click", () => {
 get("load").addEventListener("click", () => {
 	Sim.load("/saves/orb.json")
 })
-
-
-// It does not work!
-{
-	const n1 = Sim.makeNode(new Vector2D(100,100))
-	const n2 = Sim.makeNode(new Vector2D(200,100))
-	const n3 = Sim.makeNode(new Vector2D(150,200))
-	TriAl.add(n1.id, n2.id, n3.id, Sim.getNodes())
-}
